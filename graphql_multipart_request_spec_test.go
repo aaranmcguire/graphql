@@ -3,7 +3,6 @@ package graphql
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,7 +20,7 @@ func TestWithClientMpRS(t *testing.T) {
 		Transport: roundTripperFuncMpRS(func(req *http.Request) (*http.Response, error) {
 			calls++
 			resp := &http.Response{
-				Body: ioutil.NopCloser(strings.NewReader(`{"data":{"key":"value"}}`)),
+				Body: io.NopCloser(strings.NewReader(`{"data":{"key":"value"}}`)),
 			}
 			return resp, nil
 		}),
@@ -237,7 +236,7 @@ func TestFileMpRS(t *testing.T) {
 		defer file.Close()
 		is.Equal(header.Filename, "filename.txt")
 
-		b, err := ioutil.ReadAll(file)
+		b, err := io.ReadAll(file)
 		is.NoErr(err)
 		is.Equal(string(b), `This is a file`)
 

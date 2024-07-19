@@ -3,7 +3,6 @@ package graphql
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +17,7 @@ func TestDoJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		is.Equal(r.Method, http.MethodPost)
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		is.NoErr(err)
 		is.Equal(string(b), `{"query":"query {}","variables":null}`+"\n")
 		io.WriteString(w, `{
@@ -47,7 +46,7 @@ func TestDoJSONServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		is.Equal(r.Method, http.MethodPost)
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		is.NoErr(err)
 		is.Equal(string(b), `{"query":"query {}","variables":null}`+"\n")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -72,7 +71,7 @@ func TestDoJSONBadRequestErr(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
 		is.Equal(r.Method, http.MethodPost)
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		is.NoErr(err)
 		is.Equal(string(b), `{"query":"query {}","variables":null}`+"\n")
 		w.WriteHeader(http.StatusBadRequest)
@@ -101,7 +100,7 @@ func TestQueryJSON(t *testing.T) {
 	var calls int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		is.NoErr(err)
 		is.Equal(string(b), `{"query":"query {}","variables":{"username":"matryer"}}`+"\n")
 		_, err = io.WriteString(w, `{"data":{"value":"some data"}}`)
