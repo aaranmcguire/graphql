@@ -176,7 +176,7 @@ func (c *Client) runWithPostFields(ctx context.Context, req *Request, resp inter
 
 	// Log the request details
 	c.logf(">> variables: %s", variablesBuf.String())
-	c.logf(">> files: %d", len(req.files))
+	c.logf(">> files: %v", req.files)
 	c.logf(">> query: %s", req.q)
 
 	// Set the request body and content type
@@ -188,12 +188,6 @@ func (c *Client) runWithPostFields(ctx context.Context, req *Request, resp inter
 }
 
 func (c *Client) runMultipartRequestSpec(ctx context.Context, req *Request, resp interface{}) error {
-
-	// Ensure no variables are provided as they are not supported for multipart requests
-	if len(req.vars) > 0 {
-		return errors.New("variables not supported due to the multipart request spec https://github.com/jaydenseric/graphql-multipart-request-spec/issues/22")
-	}
-
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 
@@ -315,26 +309,37 @@ type multipartRequestSpecQuery struct {
 
 func (req *Request) fillMultipartRequestSpecQuery() multipartRequestSpecQuery {
 	// Define the structures for variables
-	type Variables struct {
-		Files []interface{} `json:"files"`
-	}
 	type VariablesEmpty struct{}
 
 	query := new(multipartRequestSpecQuery)
-	variables := new(Variables)
+	variables := make(map[string]interface{})
 
 	// Set the query in the operations
 	query.Operations.Query = req.Query()
 	query.Map = make(map[string][]string)
 
 	// Populate the map with file fields and their corresponding variable paths
+	var files []interface{}
 	for index, file := range req.Files() {
-		variables.Files = append(variables.Files, nil)
-		query.Map[file.Field] = []string{`variables.files.` + strconv.Itoa(index)}
+		files = append(files, nil)
+		query.Map[file.Field] = []string{"variables.files." + strconv.Itoa(index)}
+	}
+	if len(files) > 0 {
+		variables["files"] = files
+	}
+
+	// Merge existing vars into Variables
+	if req.vars != nil {
+		for key, value := range req.vars {
+			if key == "files" {
+				continue // Avoid overwriting the "files" key
+			}
+			variables[key] = value
+		}
 	}
 
 	// Set the variables in the operations
-	if len(req.Files()) > 0 {
+	if len(variables) > 0 {
 		query.Operations.Variables = variables
 	} else {
 		query.Operations.Variables = new(VariablesEmpty)
